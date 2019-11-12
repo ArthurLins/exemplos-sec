@@ -1,0 +1,135 @@
+<html>
+
+<head>
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <script src="assets/js/jquery-3.4.1.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/jsencrypt.min.js"></script>
+
+    <style>
+        .message-bubble {
+            padding: 10px 0px 10px 0px;
+        }
+
+        .message-bubble.reversed {
+            background-color: #F5F5F5;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        .message-bubble {
+            padding-left: 10px;
+        }
+
+        .panel-body {
+            padding: 0px;
+        }
+        .panel-heading {
+            background-color: #3d6da7 !important;
+            color: white !important;
+        }
+        .msg-box {
+            height: 310px;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="panel panel-default">
+                <div class="panel-heading">Panel heading without title</div>
+                <div class="panel-body">
+                    <div class="container msg-box">
+                        <div class="row message-bubble">
+                            <p class="text-muted">Matt Townsen</p>
+                            <span>Why is yo shit so broke?</span>
+                        </div>
+                        <div class="row message-bubble reversed">
+                            <p class="text-muted">Matt Townsen</p>
+                            <p>It Isn't'</p>
+                        </div>
+                        <div class="row message-bubble">
+                            <p class="text-muted">Matt Townsen</p>
+                            <p>Umm yes it is</p>
+                        </div>
+                        <div class="row message-bubble">
+                            <p class="text-muted">Matt Townsen</p>
+                            <p>Test message</p>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="input-group">
+                            <input type="text" class="form-control">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button">Send</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/socket.io.js"></script>
+    <script>
+        
+        const ChatTemplate = {
+            msg_me_template: '<div class="row message-bubble">'
+                                + '<p class="text-muted">{user}</p>'
+                                + '<p>{msg}</p>'
+                                + '</div>',
+            msg_template: '<div class="row message-bubble reversed">'
+                            + '<p class="text-muted">{user}</p>'
+                            + '<p>{msg}</p>'
+                            + '</div>',
+        
+            addMeMessage: (msg) => {
+                $(".msg-box").append(ChatTemplate.msg_me_template.replace("{user}", "Você").replace("{msg}", msg));
+                $("div.msg-box").scrollTop($("div.msg-box")[0].scrollHeight);
+                
+            },
+
+            addMessage: (name, msg) => {
+                $(".msg-box").append(ChatTemplate.msg_template.replace("{user}", name).replace("{msg}", msg));
+                $("div.msg-box").scrollTop($("div.msg-box")[0].scrollHeight);
+            }
+            
+        }
+
+        const jscrypt = new JSEncrypt({default_key_size: 512});
+
+        var chaves = [];
+        const public_key = jscrypt.getPublicKey();;
+        const private_key = jscrypt.getPrivateKey();
+
+
+
+        const socket = io("ws://127.0.0.1:8090");
+
+        socket.on('connect', () => {
+            console.log("conectado");
+            socket.emit("envia-chave-publica", public_key);
+        });
+
+        socket.on('chave-publica', (data)=>{
+            socket.emit("envia-chave-publica", public_key);
+        })
+
+        socket.on('recebe-chave-publica', (data)=>{
+            console.log("Recebido: " + data)
+            chaves[data.id] = data.chave_publica;
+            console.table(chaves);
+        })
+
+
+
+
+    
+    </script>
+
+</body>
+
+</html>
