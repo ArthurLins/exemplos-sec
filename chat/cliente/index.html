@@ -1,39 +1,9 @@
 <html>
 
 <head>
+    <title>RSAChat</title>
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
-    <script src="assets/js/jquery-3.4.1.min.js"></script>
-    <script src="assets/js/bootstrap.min.js"></script>
-    <script src="assets/js/jsencrypt.min.js"></script>
-
-    <style>
-        .message-bubble {
-            padding: 10px 0px 10px 0px;
-        }
-
-        .message-bubble.reversed {
-            background-color: #F5F5F5;
-            text-align: right;
-            padding-right: 10px;
-        }
-
-        .message-bubble {
-            padding-left: 10px;
-        }
-
-        .panel-body {
-            padding: 0px;
-        }
-        .panel-heading {
-            background-color: #3d6da7 !important;
-            color: white !important;
-        }
-        .msg-box {
-            height: 310px;
-            overflow-x: hidden;
-            overflow-y: scroll;
-        }
-    </style>
+    <link href="assets/css/style.css" rel="stylesheet">
 </head>
 
 <body>
@@ -56,84 +26,17 @@
             </div>
         </div>
     </div>
-
-    <script src="assets/js/socket.io.js"></script>
+    <!-- LIBS -->
+    <script src="assets/js/libs/jquery-3.4.1.min.js"></script>
+    <script src="assets/js/libs/bootstrap.min.js"></script>
+    <script src="assets/js/libs/jsencrypt.min.js"></script>
+    <script src="assets/js/libs/socket.io.js"></script>
+    <!-- CLASSES -->
+    <script src="assets/js/ChatView.js"></script>
+    <script src="assets/js/RSAChat.js"></script>
     <script>
-        
-        const ChatTemplate = {
-            msg_me_template: '<div class="row message-bubble">'
-                                + '<p class="text-muted">{user}</p>'
-                                + '<p>{msg}</p>'
-                                + '</div>',
-            msg_template: '<div class="row message-bubble reversed">'
-                            + '<p class="text-muted">{user}</p>'
-                            + '<p>{msg}</p>'
-                            + '</div>',
-        
-            addMeMessage: (msg) => {
-                $(".msg-box").append(ChatTemplate.msg_me_template.replace("{user}", "Você").replace("{msg}", msg));
-                $("div.msg-box").scrollTop($("div.msg-box")[0].scrollHeight);
-                
-            },
-
-            addMessage: (name, msg) => {
-                $(".msg-box").append(ChatTemplate.msg_template.replace("{user}", name).replace("{msg}", msg));
-                $("div.msg-box").scrollTop($("div.msg-box")[0].scrollHeight);
-            }
-            
-        }
-
-        const jscrypt = new JSEncrypt({default_key_size: 512});
-
-        var chaves = [];
-        const public_key = jscrypt.getPublicKey();;
-        const private_key = jscrypt.getPrivateKey();
-
-        const socket = io("ws://127.0.0.1:8090", {transports: ['websocket']});
-
-        socket.on('connect', () => {
-            console.log("conectado");
-            socket.emit("envia-chave-publica", public_key);
-        });
-
-        socket.on('chave-publica', (data)=>{
-            socket.emit("envia-chave-publica", public_key);
-        })
-
-        socket.on('recebe-chave-publica', (data)=>{
-            chaves[data.id] = data.chave_privada;
-            console.clear();
-            console.table(chaves);
-        })
-
-        socket.on('exit', (data) => {
-            delete chaves[data.id];
-        });
-
-        socket.on('message', (data)=>{
-            if (chaves[data.id] === undefined){
-                return
-            }
-            let chave_atual = chaves[data.id];
-            jscrypt.setPrivateKey(private_key);
-            ChatTemplate.addMessage(data.id,jscrypt.decrypt(data.msg));
-        });
-
-
-        $(".send-msg").click(()=>{
-            var msg = $(".msg-text").val();
-            $(".msg-text").val("");
-            ChatTemplate.addMeMessage(msg);
-            Object.entries(chaves).forEach(([id, chave])=>{
-                jscrypt.setPublicKey(chave);
-                socket.emit("message",{id:id,payload:jscrypt.encrypt(msg)});
-            });
-        })
-
-
-    
+        new RSAChat(new ChatView(".msg-box")); 
     </script>
-
 </body>
 
 </html>
